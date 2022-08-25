@@ -1,0 +1,57 @@
+name: Build chart and push into registry
+
+on:
+  workflow_call:
+    secrets:
+      helm_registry_username:
+        required: true
+      helm_registry_password:
+        required: true
+
+jobs:
+  release:
+    name: Build and push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get specific changed files
+        id: changed-files-specific
+        uses: tj-actions/changed-files@v29.0.0
+        with:
+          files: |
+            chart/
+
+      - name: Build and push
+        if: steps.changed-files-specific.outputs.any_changed == 'true'
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          source ./get_helm.sh
+
+          printf "%s" "${HELM_PASSWORD}" | helm registry login cr.yandex --username "${HELM_USERNAME}" --password-stdin
+
+          cd chart/
+          helm lint
+
+          export CHART_NAME=$(grep 'name:' Chart.yaml | cut -d' ' -f2)
+          export CHART_VERSION=$(grep 'version:' Chart.yaml | cut -d' ' -f2)
+
+          echo "Check if chart with version ${CHART_VERSION} exist"
+          if (helm show chart oci://cr.yandex/crp3782d3l6o6crc3ic0/${CHART_NAME} --version ${CHART_VERSION} &> /dev/null); then
+              echo "The chart ${CHART_NAME} with version ${CHART_VERSION} exist, exiting"
+              exit 1
+          else
+              echo "Chart does not exist"
+              helm package . --version ${CHART_VERSION}
+
+              echo "Chart will be uploaded into registry"
+              helm push ${CHART_NAME}-${CHART_VERSION}.tgz oci://cr.yandex/crp3782d3l6o6crc3ic0
+              echo "Chart has been uploaded successfully"
+          fi
+        env:
+          HELM_USERNAME: ${{ secrets.helm_registry_username }}
+          HELM_PASSWORD: ${{ secrets.helm_registry_password }}
