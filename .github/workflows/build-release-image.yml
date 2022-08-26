@@ -1,0 +1,31 @@
+name: Build image and push into registry
+
+on:
+  workflow_call:
+    secrets:
+      docker_registry_username:
+        required: true
+      docker_registry_password:
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.inputs.version }}
+        fetch-depth: 0
+    - uses: satackey/action-docker-layer-caching@46d2c640b1d8ef50d185452ad6fb324e6bd1d052
+      continue-on-error: true
+    - name: Build and push docker image
+      run: |
+        mkdir -p ${HOME}/.local/bin
+        export PATH=${HOME}/.local/bin:${PATH}
+        curl -fsSLo skaffold "https://storage.googleapis.com/skaffold/releases/v1.24.1/skaffold-$(uname | tr '[:upper:]' '[:lower:]')-amd64"
+        chmod +x skaffold && mv skaffold "${HOME}/.local/bin"
+        printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
+        skaffold build --file-output=$HOME/tags.json
+      env:
+        DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
+        DOCKER_USERNAME: ${{ secrets.docker_registry_username }}
