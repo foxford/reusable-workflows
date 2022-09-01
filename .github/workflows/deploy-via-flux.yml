@@ -1,0 +1,89 @@
+name: Deploy via Flux
+
+on:
+  workflow_call:
+    secrets:
+      kube_config_base64:
+        required: true
+      gh_token:
+        required: true
+    inputs:
+      namespace:
+        required: true
+        type: string
+      version:
+        description: 'Commit/tag/branch'
+        required: true
+        default: 'master'
+        type: string
+
+env:
+  CHART_DIR: app
+  FLUXCD_DIR: fluxcd
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout current repo
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.inputs.version }}
+        fetch-depth: 0
+        path: ${{ env.CHART_DIR }}
+
+    - name: Checkout FluxCD repo
+      uses: actions/checkout@v3
+      with:
+        repository: foxford/fluxcd
+        token: ${{ secrets.gh_token }}
+        path: ${{ env.FLUXCD_DIR }}
+
+    - name: Get versions
+      run: |
+        cd ${{ env.CHART_DIR }}
+        export CHART_NAME=$(grep 'name:' chart/Chart.yaml | cut -d' ' -f2)
+
+        export IMAGE_VERSION=$(grep 'version = ' Cargo.toml | head -n 1 | cut -d' ' -f3 | tr -d '"')
+        export CHART_VERSION=$(grep 'version:' chart/Chart.yaml | cut -d' ' -f2)
+
+        if [[ ${{ github.event.inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ || \
+              ${{ github.event.inputs.version }} == "master"                     || \
+              ${{ github.event.inputs.version }} == "main"                         ]]
+        then
+          echo Flux will use versions w/o hashes
+        else
+          export HEAD_COMMIT=$(git rev-parse --short HEAD)
+          export IMAGE_VERSION="${IMAGE_VERSION}-g${HEAD_COMMIT}"
+          export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT}"
+        fi
+        echo "CHART_NAME=${CHART_NAME}" >> $GITHUB_ENV
+        echo "IMAGE_VERSION=${IMAGE_VERSION}" >> $GITHUB_ENV
+        echo "CHART_VERSION=${CHART_VERSION}" >> $GITHUB_ENV
+
+    - name: Patch FluxCD
+      run: |
+        wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O yq
+        chmod +x yq
+
+        cd ${{ env.FLUXCD_DIR }}/apps/${{ github.event.inputs.namespace }}/${CHART_NAME}
+        yq -i '.spec.chart.spec.version = strenv(CHART_VERSION)' release.yaml
+        yq -i '.spec.values.app.image.tag = strenv(IMAGE_VERSION)' release.yaml
+        git diff
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git commit -m "Update chart ${CHART_NAME} to version ${CHART_VERSION} in namespace ${{ github.event.inputs.namespace }}" release.yaml
+        git push
+
+    - name: Reconcile FluxCD
+      run: |
+        wget -q https://github.com/fluxcd/flux2/releases/download/v0.33.0/flux_0.33.0_linux_amd64.tar.gz -O flux.tar.gz
+        tar -xf flux.tar.gz
+        chmod +x flux
+
+        echo ${KUBECONFIG_BASE64} | base64 -d > ${KUBECONFIG}
+        ./flux reconcile hr -n ${{ github.event.inputs.namespace }} ${CHART_NAME} 
+      env:
+        KUBECONFIG_BASE64: ${{ secrets.kube_config_base64 }}
+        KUBECONFIG: /tmp/kubeconfig
