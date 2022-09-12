@@ -89,6 +89,7 @@ jobs:
         chmod +x flux
 
         echo ${KUBECONFIG_BASE64} | base64 -d > ${KUBECONFIG}
+        ./flux reconcile source git flux-system
         ./flux reconcile hr -n ${{ github.event.inputs.namespace }} ${CHART_NAME} 
       env:
         KUBECONFIG_BASE64: ${{ secrets.kube_config_base64 }}
