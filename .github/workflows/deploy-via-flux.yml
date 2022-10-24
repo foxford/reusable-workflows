@@ -18,6 +18,8 @@ on:
         type: string
       release:
         description: 'Release name'
+        type: string
+        required: false
 
 env:
   CHART_DIR: app
@@ -44,8 +46,11 @@ jobs:
 
     - name: Install yq
       run: |
-        wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O /usr/bin/yq
-        chmod +x /usr/bin/yq
+        mkdir -p ${HOME}/.local/bin
+        export PATH=${HOME}/.local/bin:${PATH}
+        command -v yq || (wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O  ${HOME}/.local/bin/yq && \
+                          chmod u+x ${HOME}/.local/bin/yq)
+        echo "PATH=${PATH}" >> $GITHUB_ENV
 
     - name: Get versions
       run: |
@@ -56,11 +61,12 @@ jobs:
         fi
 
         cd ${{ env.CHART_DIR }}
-        if [ ! ${github.event.inputs.release} ]
+        export RELEASE_NAME=${{github.event.inputs.release}}
+        if [ ! ${RELEASE_NAME} ]
         then
-          export RELEASE_NAME=$(yq '.name:' chart/Chart.yaml)
+          export RELEASE_NAME=$(yq '.name' chart/Chart.yaml)
         fi
-        export CHART_VERSION=$(yq '.version:' chart/Chart.yaml)
+        export CHART_VERSION=$(yq '.version' chart/Chart.yaml)
 
         if [[ -f Cargo.toml ]]
         then
