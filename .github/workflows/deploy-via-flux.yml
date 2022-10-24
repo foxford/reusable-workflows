@@ -16,6 +16,8 @@ on:
         required: true
         default: 'master'
         type: string
+      release:
+        description: 'Release name'
 
 env:
   CHART_DIR: app
@@ -40,6 +42,11 @@ jobs:
         token: ${{ secrets.gh_token }}
         path: ${{ env.FLUXCD_DIR }}
 
+    - name: Install yq
+      run: |
+        wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O /usr/bin/yq
+        chmod +x /usr/bin/yq
+
     - name: Get versions
       run: |
         if [[ ${{ github.event.inputs.namespace }} =~ ^p-* && ! ${{ github.event.inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ ]]
@@ -49,8 +56,11 @@ jobs:
         fi
 
         cd ${{ env.CHART_DIR }}
-        export CHART_NAME=$(grep 'name:' chart/Chart.yaml | cut -d' ' -f2)
-        export CHART_VERSION=$(grep 'version:' chart/Chart.yaml | cut -d' ' -f2)
+        if [ ! ${github.event.inputs.release} ]
+        then
+          export RELEASE_NAME=$(yq '.name:' chart/Chart.yaml)
+        fi
+        export CHART_VERSION=$(yq '.version:' chart/Chart.yaml)
 
         if [[ -f Cargo.toml ]]
         then
@@ -69,22 +79,19 @@ jobs:
           export HEAD_COMMIT=$(git rev-parse --short HEAD)
           export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT}"
         fi
-        echo "CHART_NAME=${CHART_NAME}" >> $GITHUB_ENV
+        echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
         echo "IMAGE_VERSION=${IMAGE_VERSION}" >> $GITHUB_ENV
         echo "CHART_VERSION=${CHART_VERSION}" >> $GITHUB_ENV
 
     - name: Patch FluxCD
       run: |
-        wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O yq
-        chmod +x yq
-
-        cd ${{ env.FLUXCD_DIR }}/apps/${{ github.event.inputs.namespace }}/${CHART_NAME}
+        cd ${{ env.FLUXCD_DIR }}/apps/${{ github.event.inputs.namespace }}/${RELEASE_NAME}
         yq -i '.spec.chart.spec.version = strenv(CHART_VERSION)' release.yaml
         yq -i '.spec.values.app.image.tag = strenv(IMAGE_VERSION)' release.yaml
         git diff
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git commit -m "Update chart ${CHART_NAME} to version ${CHART_VERSION} in namespace ${{ github.event.inputs.namespace }}" release.yaml
+        git commit -m "Update chart ${RELEASE_NAME} to version ${CHART_VERSION} in namespace ${{ github.event.inputs.namespace }}" release.yaml
         git push
 
     - name: Reconcile FluxCD
@@ -94,8 +101,7 @@ jobs:
         chmod +x flux
 
         echo ${KUBECONFIG_BASE64} | base64 -d > ${KUBECONFIG}
-        ./flux reconcile source git flux-system
-        ./flux reconcile hr -n ${{ github.event.inputs.namespace }} ${CHART_NAME} 
+        ./flux reconcile ks ${{ github.event.inputs.namespace }} --with-source
       env:
         KUBECONFIG_BASE64: ${{ secrets.kube_config_base64 }}
         KUBECONFIG: /tmp/kubeconfig
