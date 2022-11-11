@@ -43,7 +43,7 @@ jobs:
           echo "Check if chart with version ${CHART_VERSION} exist"
           if (helm show chart oci://cr.yandex/crp3782d3l6o6crc3ic0/${CHART_NAME} --version ${CHART_VERSION} &> /dev/null); then
               echo "The chart ${CHART_NAME} with version ${CHART_VERSION} exist, exiting"
-              exit 1
+              exit 0
           else
               echo "Chart does not exist"
               helm package . --version ${CHART_VERSION}
