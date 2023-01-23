@@ -27,8 +27,8 @@ jobs:
           printf "%s" "${HELM_PASSWORD}" | helm registry login cr.yandex --username "${HELM_USERNAME}" --password-stdin
 
           cd chart/
-          if [ -f ci/local-values.yaml ]; then
-              helm lint -f ci/local-values.yaml
+          if [ -f ci/values/sample.yaml ]; then
+              helm lint -f ci/values/sample.yaml
           else 
               helm lint
           fi
