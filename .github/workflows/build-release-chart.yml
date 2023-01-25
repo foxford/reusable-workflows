@@ -35,7 +35,11 @@ jobs:
           printf "%s" "${HELM_PASSWORD}" | helm registry login cr.yandex --username "${HELM_USERNAME}" --password-stdin
 
           cd chart/
-          helm lint
+          if [ -f sample.yaml ]; then
+              helm lint -f sample.yaml
+          else 
+              helm lint
+          fi
 
           export CHART_NAME=$(grep 'name:' Chart.yaml | cut -d' ' -f2)
           export CHART_VERSION=$(grep 'version:' Chart.yaml | cut -d' ' -f2)
