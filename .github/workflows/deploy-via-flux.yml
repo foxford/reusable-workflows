@@ -8,6 +8,9 @@ on:
       gh_token:
         required: true
     inputs:
+      cluster:
+        required: true
+        type: string
       namespace:
         required: true
         type: string
@@ -91,7 +94,7 @@ jobs:
 
     - name: Patch FluxCD
       run: |
-        cd ${{ env.FLUXCD_DIR }}/apps/${{ github.event.inputs.namespace }}/${RELEASE_NAME}
+        cd ${{ env.FLUXCD_DIR }}/clusters/${{ github.event.inputs.cluster }}/${{ github.event.inputs.namespace }}/${RELEASE_NAME}
         yq -i '.spec.chart.spec.version = strenv(CHART_VERSION)' release.yaml
         yq -i '.spec.values.app.image.tag = strenv(IMAGE_VERSION)' release.yaml
         git diff
