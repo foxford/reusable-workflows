@@ -1,6 +1,7 @@
 name: Build image and push into registry
 
-on: workflow_call:
+on:
+  workflow_call:
     secrets:
       docker_registry_username:
         required: true
