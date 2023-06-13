@@ -7,6 +7,10 @@ on:
         required: true
       docker_registry_password:
         required: true
+    inputs:
+      repository:
+        required: true
+        type: string
 
 jobs:
   release:
@@ -20,13 +24,9 @@ jobs:
       continue-on-error: true
     - name: Build and push docker image
       run: |
-        mkdir -p ${HOME}/.local/bin
-        export PATH=${HOME}/.local/bin:${PATH}
-        curl -fsSLo skaffold "https://storage.googleapis.com/skaffold/releases/v1.24.1/skaffold-$(uname | tr '[:upper:]' '[:lower:]')-amd64"
-        chmod +x skaffold && mv skaffold "${HOME}/.local/bin"
-        skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
-        skaffold build --file-output=$HOME/tags.json
+        docker build -t ${{ github.event.inputs.repository }}:$(git describe --tags --always) .
+        docker push ${{ github.event.inputs.repository }}:$(git describe --tags --always)
       env:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
         DOCKER_USERNAME: ${{ secrets.docker_registry_username }}
