@@ -75,16 +75,15 @@ jobs:
         then
           export IMAGE_VERSION=v$(grep 'version = ' Cargo.toml | head -n 1 | cut -d' ' -f3 | tr -d '"')
         else
-          export IMAGE_VERSION=$(git describe --tags --abbrev=0)
+          export IMAGE_VERSION=$(git describe --tags --always)  # just because skaffold use the same command to obtain docker-image tag
         fi
 
         if [[ ${{ github.event.inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ || \
               ${{ github.event.inputs.version }} == "master"                     || \
               ${{ github.event.inputs.version }} == "main"                         ]]
         then
-          echo Flux will use versions w/o hashes
+          echo Flux will use chart version w/o hashes
         else
-          export IMAGE_VERSION=$(git describe --tags --always)  # just because skaffold use the same command to obtain docker-image tag
           export HEAD_COMMIT=$(git rev-parse --short HEAD)
           export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT}"
         fi
