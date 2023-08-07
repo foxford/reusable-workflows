@@ -31,7 +31,7 @@ jobs:
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
         cd $WORKDIR
-        export TAG=$(git describe --tag --always | sed -e "s/${TAG_PREFIX}//")
+        export TAG=$(git describe --tag --always --match "${TAG_PREFIX}-*" | sed -e "s/${TAG_PREFIX}//")
         skaffold build --file-output=$HOME/tags.json --tag $TAG
       env:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
