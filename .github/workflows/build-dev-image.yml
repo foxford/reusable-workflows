@@ -7,6 +7,10 @@ on:
         required: true
       docker_registry_password:
         required: true
+    inputs:
+      working_directory:
+        required: true
+        type: string
 
 jobs:
   release:
@@ -26,7 +30,9 @@ jobs:
         chmod +x skaffold && mv skaffold "${HOME}/.local/bin"
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
+        cd $WORKDIR
         skaffold build --file-output=$HOME/tags.json
       env:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
         DOCKER_USERNAME: ${{ secrets.docker_registry_username }}
+        WORKDIR: ${{ inputs.working_directory }}
