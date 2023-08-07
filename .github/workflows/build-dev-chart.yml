@@ -7,6 +7,10 @@ on:
         required: true
       helm_registry_password:
         required: true
+    inputs:
+      working_directory:
+        required: true
+        type: string
 
 jobs:
   release:
@@ -26,7 +30,7 @@ jobs:
 
           printf "%s" "${HELM_PASSWORD}" | helm registry login cr.yandex --username "${HELM_USERNAME}" --password-stdin
 
-          cd chart/
+          cd ${WORKDIR}/chart/
           if [ -f sample.yaml ]; then
               helm lint -f sample.yaml
           else 
@@ -52,3 +56,4 @@ jobs:
         env:
           HELM_USERNAME: ${{ secrets.helm_registry_username }}
           HELM_PASSWORD: ${{ secrets.helm_registry_password }}
+          WORKDIR: ${{ inputs.working_directory }}
