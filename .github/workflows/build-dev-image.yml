@@ -34,8 +34,7 @@ jobs:
         export LATEST_TAG=$(git tag -l "${TAG_PREFIX}*" --sort committerdate | tail -n 1 | sed -e "s/${TAG_PREFIX}//")
         export CURRENT_COMMIT=$(git rev-parse --short HEAD)
         export FINAL_TAG="${LATEST_TAG}-${CURRENT_COMMIT}"
-        git tag $(echo $LATEST_TAG | )
-        skaffold build --file-output=$HOME/tags.json
+        skaffold build --file-output=$HOME/tags.json --tag $FINAL_TAG
       env:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
         DOCKER_USERNAME: ${{ secrets.docker_registry_username }}
