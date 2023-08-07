@@ -8,7 +8,7 @@ on:
       docker_registry_password:
         required: true
     inputs:
-      working_directory:
+      service:
         required: true
         type: string
 
@@ -31,8 +31,11 @@ jobs:
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
         cd $WORKDIR
+        export LATEST_TAG=$(git tag -l "${TAG_PREFIX}*" --sort commiterdate | tail -n 1)
+        git tag $(echo $LATEST_TAG | sed -e "s/${TAG_PREFIX}//")
         skaffold build --file-output=$HOME/tags.json
       env:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
         DOCKER_USERNAME: ${{ secrets.docker_registry_username }}
-        WORKDIR: ${{ inputs.working_directory }}
+        WORKDIR: ${{ inputs.service }}
+        PREFIX: "${{ inputs.service }}-"
