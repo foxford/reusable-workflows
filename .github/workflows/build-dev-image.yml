@@ -31,7 +31,7 @@ jobs:
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
         cd $WORKDIR
-        export LATEST_TAG=$(git tag -l "${PREFIX}*" --sort commiterdate | tail -n 1)
+        export LATEST_TAG=$(git tag -l "${PREFIX}*" --sort committerdate | tail -n 1)
         git tag $(echo $LATEST_TAG | sed -e "s/${PREFIX}//")
         skaffold build --file-output=$HOME/tags.json
       env:
