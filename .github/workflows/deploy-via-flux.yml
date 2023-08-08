@@ -66,7 +66,7 @@ jobs:
           exit 1
         fi
 
-        cd ${WORKDIR}/${{ env.CHART_DIR }}
+        cd ${{ env.CHART_DIR }}/${WORKDIR}/
         export RELEASE_NAME=${{github.event.inputs.release}}
         if [ ! ${RELEASE_NAME} ]
         then
