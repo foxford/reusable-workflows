@@ -93,8 +93,7 @@ jobs:
 
     - name: Patch FluxCD
       run: |
-        echo ${RELEASE_NAME}
-        cd ${{ env.FLUXCD_DIR }}/clusters/${{ github.event.inputs.cluster }}/${{ github.event.inputs.namespace }}/${RELEASE_NAME}
+        cd ${{ env.FLUXCD_DIR }}/clusters/${{ github.event.inputs.cluster }}/${{ github.event.inputs.namespace }}/${{ inputs.service }}
         yq -i '.spec.chart.spec.version = strenv(CHART_VERSION)' release.yaml
         yq -i '.spec.values.app.image.tag = strenv(IMAGE_VERSION)' release.yaml
         git diff
