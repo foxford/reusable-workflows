@@ -14,6 +14,9 @@ on:
       namespace:
         required: true
         type: string
+      service:
+        required: true
+        type: string
       version:
         description: 'Commit/tag/branch'
         required: true
@@ -63,7 +66,7 @@ jobs:
           exit 1
         fi
 
-        cd ${{ env.CHART_DIR }}
+        cd ${WORKDIR}/${{ env.CHART_DIR }}
         export RELEASE_NAME=${{github.event.inputs.release}}
         if [ ! ${RELEASE_NAME} ]
         then
@@ -71,7 +74,9 @@ jobs:
         fi
         export CHART_VERSION=$(yq '.version' chart/Chart.yaml)
 
-        export IMAGE_VERSION=$(git describe --tags --always)  # just because skaffold use the same command to obtain docker-image tag
+        # skaffold use almost the same command to obtain docker-image tag
+        # but we changed it a bit for monorepo case
+        export IMAGE_VERSION=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
 
         if [[ ${{ github.event.inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ || \
               ${{ github.event.inputs.version }} == "master"                     || \
@@ -108,3 +113,5 @@ jobs:
       env:
         KUBECONFIG_BASE64: ${{ secrets.kube_config_base64 }}
         KUBECONFIG: /tmp/kubeconfig
+        WORKDIR: ${{ inputs.service }}
+        TAG_PREFIX: "${{ inputs.service }}-"
