@@ -11,6 +11,7 @@ on:
       service:
         required: true
         type: string
+        default: .
 
 jobs:
   release:
@@ -30,8 +31,15 @@ jobs:
         chmod +x skaffold && mv skaffold "${HOME}/.local/bin"
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
-        export TAG=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
-        skaffold build --file-output=$HOME/tags.json --tag $TAG -f ${WORKDIR}/skaffold.yaml
+
+        if [ ${WORKDIR} = "." ]; then
+          # simple case
+          skaffold build --file-output=$HOME/tags.json
+        else
+          # handling monorepo here
+          export TAG=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
+          skaffold build --file-output=$HOME/tags.json --tag $TAG -f ${WORKDIR}/skaffold.yaml
+        fi
       env:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
         DOCKER_USERNAME: ${{ secrets.docker_registry_username }}

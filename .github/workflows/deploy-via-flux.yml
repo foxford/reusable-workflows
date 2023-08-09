@@ -17,6 +17,7 @@ on:
       service:
         required: true
         type: string
+        default: .
       version:
         description: 'Commit/tag/branch'
         required: true
@@ -70,35 +71,46 @@ jobs:
 
         cd ${{ env.CHART_DIR }}/${WORKDIR}/
 
+        export RELEASE_NAME=${{github.event.inputs.release}}
+        if [ ! ${RELEASE_NAME} ]
+        then
+          export RELEASE_NAME=$(yq '.name' chart/Chart.yaml)
+        fi
+
         export CHART_VERSION=$(yq '.version' chart/Chart.yaml)
+        export IMAGE_VERSION=$(git describe --tags --always)
 
         if [[ ${{ github.event.inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ || \
+              ${{ github.event.inputs.version }} == "master"                     || \
               ${{ github.event.inputs.version }} == "main"                         ]]
         then
           echo Flux will use chart version w/o hashes
-          export IMAGE_VERSION=$(git tag -l "${TAG_PREFIX}*" --sort committerdate | tail -n 1 | sed -e "s/${TAG_PREFIX}//")
+          # monorepo
+          if [ $WORKDIR != "." ]; then
+            export IMAGE_VERSION=$(git tag -l "${TAG_PREFIX}*" --sort committerdate | tail -n 1 | sed -e "s/${TAG_PREFIX}//")
+          fi
         else
           export HEAD_COMMIT=$(git rev-parse --short HEAD)
           export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT}"
 
-          # skaffold use almost the same command to obtain docker-image tag
-          # but we changed it a bit for monorepo case
-          export IMAGE_VERSION=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
+          if [ $WORKDIR != "." ]; then
+            export IMAGE_VERSION=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
+          fi
         fi
-        echo $IMAGE_VERSION
-        echo $CHART_VERSION
+
+        echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
         echo "IMAGE_VERSION=${IMAGE_VERSION}" >> $GITHUB_ENV
         echo "CHART_VERSION=${CHART_VERSION}" >> $GITHUB_ENV
 
     - name: Patch FluxCD
       run: |
-        cd ${{ env.FLUXCD_DIR }}/clusters/${{ github.event.inputs.cluster }}/${{ github.event.inputs.namespace }}/${{ inputs.service }}
+        cd ${{ env.FLUXCD_DIR }}/clusters/${{ github.event.inputs.cluster }}/${{ github.event.inputs.namespace }}/${RELEASE_NAME}
         yq -i '.spec.chart.spec.version = strenv(CHART_VERSION)' release.yaml
         yq -i '.spec.values.app.image.tag = strenv(IMAGE_VERSION)' release.yaml
         git diff
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git commit -m "Update chart ${{ inputs.service }} to version ${CHART_VERSION} in namespace ${{ github.event.inputs.namespace }}" release.yaml
+        git commit -m "Update chart ${RELEASE_NAME} to version ${CHART_VERSION} in namespace ${{ github.event.inputs.namespace }}" release.yaml
         git push
 
     - name: Reconcile FluxCD

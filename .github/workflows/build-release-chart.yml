@@ -11,6 +11,7 @@ on:
       service:
         required: true
         type: string
+        default: .
 
 jobs:
   release:
