@@ -9,7 +9,7 @@ on:
         required: true
     inputs:
       service:
-        required: true
+        required: false
         type: string
         default: .
 

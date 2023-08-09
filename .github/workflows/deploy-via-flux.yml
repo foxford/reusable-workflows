@@ -15,7 +15,7 @@ on:
         required: true
         type: string
       service:
-        required: true
+        required: false
         type: string
         default: .
       version:
