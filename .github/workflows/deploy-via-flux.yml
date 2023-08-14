@@ -91,7 +91,7 @@ jobs:
           fi
         else
           export HEAD_COMMIT=$(git rev-parse --short HEAD)
-          export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT}"
+          export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT:0:7}"
 
           if [ $WORKDIR != "." ]; then
             export IMAGE_VERSION=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
