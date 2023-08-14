@@ -90,8 +90,8 @@ jobs:
             export IMAGE_VERSION=$(git tag -l "${TAG_PREFIX}*" --sort committerdate | tail -n 1 | sed -e "s/${TAG_PREFIX}//")
           fi
         else
-          export HEAD_COMMIT=$(git rev-parse --short HEAD)
-          export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT:0:7}"
+          export HEAD_COMMIT=$(git rev-parse --short=7 HEAD)
+          export CHART_VERSION="${CHART_VERSION}-${HEAD_COMMIT}"
 
           if [ $WORKDIR != "." ]; then
             export IMAGE_VERSION=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
