@@ -28,7 +28,7 @@ jobs:
         uses: tj-actions/changed-files@v29.0.0
         with:
           files: |
-            chart/
+            ${{ inputs.service }}/chart/
 
       - name: Build and push
         if: steps.changed-files-specific.outputs.any_changed == 'true'
