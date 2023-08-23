@@ -23,6 +23,13 @@ jobs:
         fetch-depth: 0
     - uses: satackey/action-docker-layer-caching@46d2c640b1d8ef50d185452ad6fb324e6bd1d052
       continue-on-error: true
+    - uses: actions/cache@v2
+      with:
+          path: ~/.skaffold/
+          key: sk-${{ github.sha }}
+          restore-keys: |
+            sk-${{ github.sha }}
+            sk-
     - name: Build and push docker image
       run: |
         mkdir -p ${HOME}/.local/bin
@@ -31,6 +38,8 @@ jobs:
         chmod +x skaffold && mv skaffold "${HOME}/.local/bin"
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
+
+        cat ~/.skaffold/cache || true
 
         if [ ${WORKDIR} = "." ]; then
           # simple case
