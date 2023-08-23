@@ -25,11 +25,11 @@ jobs:
       continue-on-error: true
     - uses: actions/cache@v2
       with:
-          path: ~/.skaffold/
-          key: sk-${{ github.sha }}
-          restore-keys: |
-            sk-${{ github.sha }}
-            sk-
+        path: ~/.skaffold/
+        key: sk-${{ github.sha }}
+        restore-keys: |
+          sk-${{ github.sha }}
+          sk-
     - name: Build and push docker image
       run: |
         mkdir -p ${HOME}/.local/bin
