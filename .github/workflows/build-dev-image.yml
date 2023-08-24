@@ -41,7 +41,8 @@ jobs:
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
 
-        docker build -f ${WORKDIR}/docker/Dockerfile .
+        docker image ls
+        for IMAGE in $(docker image ls --format "table {{.Repository}}:{{.Tag}}" --filter "dangling=false" | tail -n +2); do docker tag $IMAGE $(echo $IMAGE | sed -E 's/:.+/:latest/'); done
 
         cat ~/.skaffold/cache || true
 
