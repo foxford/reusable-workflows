@@ -41,6 +41,8 @@ jobs:
         skaffold config set --global collect-metrics false
         printf "%s" "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USERNAME} --password-stdin cr.yandex
 
+        docker build -f ${WORKDIR}/docker/Dockerfile .
+
         cat ~/.skaffold/cache || true
 
         if [ ${WORKDIR} = "." ]; then
