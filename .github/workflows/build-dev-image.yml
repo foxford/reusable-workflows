@@ -26,9 +26,11 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ~/.skaffold/
-        key: sk-${{ github.sha }}
+        key: sk-${{ inputs.service }}-${{ github.ref_name }}-${{ github.sha }}
         restore-keys: |
-          sk-${{ github.sha }}
+          sk-${{ inputs.service }}-${{ github.ref_name }}-${{ github.sha }}
+          sk-${{ inputs.service }}-${{ github.ref_name }}
+          sk-${{ inputs.service }}
           sk-
     - name: Build and push docker image
       run: |
