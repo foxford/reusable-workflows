@@ -55,4 +55,4 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
         DOCKER_USERNAME: ${{ secrets.docker_registry_username }}
         WORKDIR: ${{ inputs.service }}
-        TAG_PREFIX: "${{ inputs.service }}-"
+        TAG_PREFIX: "${{ inputs.service }}-v"
