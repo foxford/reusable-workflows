@@ -48,7 +48,7 @@ jobs:
           skaffold build --file-output=$HOME/tags.json
         else
           # handling monorepo here
-          export TAG=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
+          export TAG=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}/v/")
           skaffold build --file-output=$HOME/tags.json --tag $TAG -f ${WORKDIR}/skaffold.yaml
         fi
       env:
