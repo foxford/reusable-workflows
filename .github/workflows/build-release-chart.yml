@@ -40,6 +40,9 @@ jobs:
           printf "%s" "${HELM_PASSWORD}" | helm registry login cr.yandex --username "${HELM_USERNAME}" --password-stdin
 
           cd ${WORKDIR}/chart/
+
+          helm dependency build .
+
           if [ -f sample.yaml ]; then
               helm lint -f sample.yaml
           else 
@@ -55,7 +58,6 @@ jobs:
               exit 0
           else
               echo "Chart does not exist"
-              helm dependency build .
               helm package . --version ${CHART_VERSION}
 
               echo "Chart will be uploaded into registry"
