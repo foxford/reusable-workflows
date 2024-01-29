@@ -55,6 +55,7 @@ jobs:
               exit 0
           else
               echo "Chart does not exist"
+              helm dependency build .
               helm package . --version ${CHART_VERSION}
 
               echo "Chart will be uploaded into registry"
