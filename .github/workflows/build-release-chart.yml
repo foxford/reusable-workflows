@@ -49,7 +49,7 @@ jobs:
               helm lint
           fi
 
-          export CHART_NAME=$(grep 'name:' Chart.yaml | cut -d' ' -f2)
+          export CHART_NAME=$(grep '^name:' Chart.yaml | cut -d' ' -f2)
           export CHART_VERSION=$(grep 'version:' Chart.yaml | cut -d' ' -f2)
 
           echo "Check if chart with version ${CHART_VERSION} exist"

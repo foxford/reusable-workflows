@@ -41,7 +41,7 @@ jobs:
               helm lint
           fi
 
-          export CHART_NAME=$(grep 'name:' Chart.yaml | cut -d' ' -f2)
+          export CHART_NAME=$(grep '^name:' Chart.yaml | cut -d' ' -f2)
           export HEAD_COMMIT=$(git rev-parse --short=7 HEAD)
           export CHART_VERSION=$(grep 'version:' Chart.yaml | cut -d' ' -f2)-g${HEAD_COMMIT}
           echo ${CHART_VERSION}
