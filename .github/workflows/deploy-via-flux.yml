@@ -40,14 +40,14 @@ jobs:
     runs-on: buildjet-2vcpu-ubuntu-2204
     steps:
     - name: Checkout current repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.inputs.version }}
+        ref: ${{ inputs.version }}
         fetch-depth: 0
         path: ${{ env.CHART_DIR }}
 
     - name: Checkout FluxCD repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: foxford/fluxcd
         token: ${{ secrets.gh_token }}
@@ -57,13 +57,13 @@ jobs:
       run: |
         mkdir -p ${HOME}/.local/bin
         export PATH=${HOME}/.local/bin:${PATH}
-        command -v yq || (wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O  ${HOME}/.local/bin/yq && \
+        command -v yq || (wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O ${HOME}/.local/bin/yq && \
                           chmod u+x ${HOME}/.local/bin/yq)
         echo "PATH=${PATH}" >> $GITHUB_ENV
 
     - name: Get versions
       run: |
-        if [[ ${{ github.event.inputs.namespace }} =~ ^p-* && ! ${{ github.event.inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+        if [[ ${{ inputs.namespace }} =~ ^p-* && ! ${{ inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ ]]
         then
           echo Failed to run deploy because it\'s prohibited to deploy into production without GIT tag
           exit 1
@@ -71,7 +71,7 @@ jobs:
 
         cd ${{ env.CHART_DIR }}/${WORKDIR}/
 
-        export RELEASE_NAME=${{github.event.inputs.release}}
+        export RELEASE_NAME=${{ inputs.release }}
         if [ ! ${RELEASE_NAME} ]
         then
           export RELEASE_NAME=$(yq '.name' chart/Chart.yaml)
@@ -80,9 +80,9 @@ jobs:
         export CHART_VERSION=$(yq '.version' chart/Chart.yaml)
         export IMAGE_VERSION=$(git describe --tags --always)
 
-        if [[ ${{ github.event.inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ || \
-              ${{ github.event.inputs.version }} == "master"                     || \
-              ${{ github.event.inputs.version }} == "main"                         ]]
+        if [[ ${{ inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ || \
+              ${{ inputs.version }} == "master"                     || \
+              ${{ inputs.version }} == "main"                         ]]
         then
           echo Flux will use chart version w/o hashes
           # monorepo
@@ -104,13 +104,13 @@ jobs:
 
     - name: Patch FluxCD
       run: |
-        cd ${{ env.FLUXCD_DIR }}/clusters/${{ github.event.inputs.cluster }}/${{ github.event.inputs.namespace }}/${RELEASE_NAME}
+        cd ${{ env.FLUXCD_DIR }}/clusters/${{ inputs.cluster }}/${{ inputs.namespace }}/${RELEASE_NAME}
         yq -i '.spec.chart.spec.version = strenv(CHART_VERSION)' release.yaml
         yq -i '.spec.values.app.image.tag = strenv(IMAGE_VERSION)' release.yaml
         git diff
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git commit -m "Update chart ${RELEASE_NAME} to version ${CHART_VERSION} in namespace ${{ github.event.inputs.namespace }}" release.yaml
+        git commit -m "Update chart ${RELEASE_NAME} to version ${CHART_VERSION} in namespace ${{ inputs.namespace }}" release.yaml
         git push
 
     - name: Reconcile FluxCD
@@ -120,7 +120,7 @@ jobs:
         chmod +x flux
 
         echo ${KUBECONFIG_BASE64} | base64 -d > ${KUBECONFIG}
-        ./flux reconcile ks ${{ github.event.inputs.namespace }} --with-source
+        ./flux reconcile ks ${{ inputs.namespace }} --with-source
       env:
         KUBECONFIG_BASE64: ${{ secrets.kube_config_base64 }}
         KUBECONFIG: /tmp/kubeconfig
