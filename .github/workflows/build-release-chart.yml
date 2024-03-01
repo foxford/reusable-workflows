@@ -18,16 +18,19 @@ jobs:
     name: Build and push
     runs-on: buildjet-2vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Get specific changed files
         id: changed-files-specific
-        uses: tj-actions/changed-files@v41.0.0
+        uses: tj-actions/changed-files@v42
         with:
           files: |
-            ${{ inputs.service }}/chart/
-      - name: Build and push helm chart
+            ${{ inputs.service }}/chart/**
+
+      - name: Build and push
         if: steps.changed-files-specific.outputs.any_changed == 'true'
         run: |
           curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
