@@ -18,12 +18,10 @@ jobs:
     name: Build and push
     runs-on: buildjet-2vcpu-ubuntu-2204
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Build and push
+      - name: Build and push helm chart
         run: |
           curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
           chmod 700 get_helm.sh

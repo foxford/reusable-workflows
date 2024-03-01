@@ -15,6 +15,7 @@ on:
 
 jobs:
   release:
+    name: Build and push
     runs-on: buildjet-2vcpu-ubuntu-2204
     steps:
     - uses: actions/checkout@v4
