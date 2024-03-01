@@ -23,10 +23,10 @@ jobs:
           fetch-depth: 0
       - name: Get specific changed files
         id: changed-files-specific
-        uses: tj-actions/changed-files@v41.0.0
+        uses: tj-actions/changed-files@v42
         with:
           files: |
-            ${{ inputs.service }}/chart/
+            ${{ inputs.service }}/chart/**
       - name: Build and push helm chart
         if: steps.changed-files-specific.outputs.any_changed == 'true'
         run: |
