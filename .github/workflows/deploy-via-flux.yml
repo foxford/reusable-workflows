@@ -63,7 +63,7 @@ jobs:
 
     - name: Get versions
       run: |
-        if [[ ${{ inputs.namespace }} =~ ^p-* && ! ${{ inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+        if [[ ${{ inputs.cluster }} == "prod" ]]
         then
           echo Failed to run deploy because it\'s prohibited to deploy into production without GIT tag
           exit 1
@@ -76,25 +76,45 @@ jobs:
         then
           export RELEASE_NAME=$(yq '.name' chart/Chart.yaml)
         fi
-
+        
+        ###
+        # Значение inputs.version определяет значения CHART_VERSION и IMAGE_VERSION следующим образом:
+        # - основная ветка (т.е. main или master):
+        #   - CHART_VERSION - релиз-версия в последнем комите основной ветки;
+        #   - IMAGE_VERSION - последняя релиз-версия;
+        # - тег (т.е. v0.0.0 или application-v0.0.0):
+        #   - CHART_VERSION - релиз-версия в комите заданного тега;
+        #   - IMAGE_VERSION - релиз-версия соответствующая тегу;
+        # - любая другая ветка:
+        #   - CHART_VERSION - пре-релиз версия с хешем последнего комита заданной ветки;
+        #   - IMAGE_VERSION - пре-релиз версия с хешем последнего комита заданной ветки.
+        ###
+        
         export CHART_VERSION=$(yq '.version' chart/Chart.yaml)
-        export IMAGE_VERSION=$(git describe --tags --always)
 
-        if [[ ${{ inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ || \
-              ${{ inputs.version }} == "master"                     || \
-              ${{ inputs.version }} == "main"                         ]]
+        if [[ ${{ inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$                  || \
+              ${{ inputs.version }} =~ ^"${TAG_PREFIX}"[v]?[0-9]+\.[0-9]+\.[0-9]+$   || \
+              ${{ inputs.version }} == ${{ github.event.repository.default_branch }} ]]
         then
           echo Flux will use chart version w/o hashes
-          # monorepo
+
           if [ $WORKDIR != "." ]; then
-            export IMAGE_VERSION=$(git tag -l "${TAG_PREFIX}*" --sort committerdate | tail -n 1 | sed -e "s/${TAG_PREFIX}//")
+            # monorepo case
+            export IMAGE_VERSION=$(git describe --tags --always --match "${TAG_PREFIX}*" --abbrev=0 | sed -e "s/${TAG_PREFIX}//")
+          else
+            # regular repo case
+            export IMAGE_VERSION=$(git describe --tags --always --abbrev=0)
           fi
         else
           export HEAD_COMMIT=$(git rev-parse --short=7 HEAD)
           export CHART_VERSION="${CHART_VERSION}-g${HEAD_COMMIT}"
 
           if [ $WORKDIR != "." ]; then
-            export IMAGE_VERSION=$(git describe --tag --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
+            # monorepo case
+            export IMAGE_VERSION=$(git describe --tags --always --match "${TAG_PREFIX}*" | sed -e "s/${TAG_PREFIX}//")
+          else
+            # regular repo case
+            export IMAGE_VERSION=$(git describe --tags --always)
           fi
         fi
 
