@@ -63,7 +63,7 @@ jobs:
 
     - name: Get versions
       run: |
-        if [[ ${{ inputs.cluster }} == "prod" ]]
+        if [[ ${{ inputs.namespace }} =~ ^p-* && ! ${{ inputs.version }} =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ ]]
         then
           echo Failed to run deploy because it\'s prohibited to deploy into production without GIT tag
           exit 1
