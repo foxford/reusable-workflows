@@ -140,7 +140,7 @@ jobs:
         chmod +x flux
 
         echo ${KUBECONFIG_BASE64} | base64 -d > ${KUBECONFIG}
-        ./flux reconcile ks ${{ inputs.namespace }} --with-source
+        ./flux reconcile ks ${{ inputs.namespace }} --with-source --timeout 10m
       env:
         KUBECONFIG_BASE64: ${{ secrets.kube_config_base64 }}
         KUBECONFIG: /tmp/kubeconfig
