@@ -132,16 +132,3 @@ jobs:
         git config user.email github-actions@github.com
         git commit -m "Update chart ${RELEASE_NAME} to version ${CHART_VERSION} in namespace ${{ inputs.namespace }}" release.yaml
         git push
-
-    - name: Reconcile FluxCD
-      run: |
-        wget -q https://github.com/fluxcd/flux2/releases/download/v0.41.2/flux_0.41.2_linux_amd64.tar.gz -O flux.tar.gz
-        tar -xf flux.tar.gz
-        chmod +x flux
-
-        echo ${KUBECONFIG_BASE64} | base64 -d > ${KUBECONFIG}
-        ./flux reconcile ks ${{ inputs.namespace }} --with-source
-      env:
-        KUBECONFIG_BASE64: ${{ secrets.kube_config_base64 }}
-        KUBECONFIG: /tmp/kubeconfig
-
