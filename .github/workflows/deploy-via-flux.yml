@@ -3,8 +3,6 @@ name: Deploy via Flux
 on:
   workflow_call:
     secrets:
-      kube_config_base64:
-        required: true
       gh_token:
         required: true
     inputs:
