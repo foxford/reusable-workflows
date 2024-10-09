@@ -7,6 +7,8 @@ on:
         required: true
       docker_registry_password:
         required: true
+      sentry_auth_token:
+        required: false
     inputs:
       service:
         required: false
@@ -60,5 +62,6 @@ jobs:
       env:
         DOCKER_PASSWORD: ${{ secrets.docker_registry_password }}
         DOCKER_USERNAME: ${{ secrets.docker_registry_username }}
+        SENTRY_AUTH_TOKEN: ${{ secrets.sentry_auth_token }}
         WORKDIR: ${{ inputs.service }}
         TAG_PREFIX: "${{ inputs.service }}-v"
